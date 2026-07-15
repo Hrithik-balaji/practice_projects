@@ -1,0 +1,14 @@
+[
+   {
+      "name": "hb",
+      "student_id": 1,
+      "branch": "cse",
+      "cgpa": 9.5
+   },
+   {
+      "name": "vikas",
+      "student_id": 2,
+      "branch": "cse",
+      "cgpa": 9.8
+   }
+]
