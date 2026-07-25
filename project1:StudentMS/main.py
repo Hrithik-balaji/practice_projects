@@ -1,3 +1,5 @@
+from datetime import datetime
+import os
 import json
 database=[]
 MAXCGPA=10
@@ -6,6 +8,23 @@ MINCGPA=0
 def save_database():
     with open("student.json",'w') as file:
         json.dump(database,file,indent=3)
+
+#backup creation
+def create_backup():
+    with open("student.json",'r') as file:
+        data=json.load(file)
+    date=str(datetime.now().strftime("%Y-%m-%d"))
+    name=date+".json"
+    with open(name,'w') as file:
+        json.dump(data,file,indent=3)
+        print("Backup has been created");
+
+#deleting backup
+def delete_backup():
+    date=input("Enter the date:")
+    name=date+".json"
+    os.remove(name)
+    print("Backup deleted!!!")
 
 #load database
 def load_database():
@@ -18,7 +37,7 @@ def load_database():
         return
 
 #add student function
-def add_Student():
+def add_student():
     #validation for name
     name=input("Enter student name:")
     if(name.strip()==""):
@@ -37,7 +56,7 @@ def add_Student():
          print("Invalstudent_id input. Please enter a valstudent_id integer for the student_ID.")
          return
     #validation for branch
-    branch=input("Enter branch:")
+    branch=input("Enter branch:").strip().upper()
     if(branch.strip()==""):
         print("Empty field,Enter a valid one,,,,")
         return
@@ -51,12 +70,13 @@ def add_Student():
         print("Invalid CGPA input. Please enter a valid float for the CGPA.")
         return
 
-    ls=dict()
-    ls['name']=name
-    ls['student_id']=student_id
-    ls['branch']=branch
-    ls["cgpa"]=cgpa
-    database.append(ls)
+    student = {
+        "name": name,
+        "student_id": student_id,
+        "branch": branch,
+        "cgpa": cgpa
+    }
+    database.append(student)
     save_database()
     print("Successfully added !!!!!!!!!!!!!")
 
@@ -70,10 +90,30 @@ def find_student(student_student_id):
 
 #total students function
 def  total_students():
-    print("Total number of students:",len(database))
+    branch=input("Enter the if you want total or branch-wise:").strip().upper()
+    if branch=="TOTAL":
+        print("Total number of students:",len(database))
+        return
+    else:
+        section=input("Enter the department:").strip().upper()
+        count=sum(1 for student in database if student['branch'].upper()==section)
+        print("Total number of students in",section,"are: ",count)
+        return
+
+#convert to txt file
+def convert_file():
+    with open("report.txt",'w') as file:
+        for student in database:
+            file.write(
+                f"|{student['name']} | "
+                f"|{student['student_id']} | "
+                f"|{student['branch']} | "
+                f"|{student['cgpa']}|\n"
+            )
+    print("Report Generated......")
 
 #view student function
-def view_Students():
+def view_students():
     if len(database)==0:
         print("No student available !! Empty database")
         return
@@ -83,8 +123,9 @@ def view_Students():
     for student in database:
         print(f"|{student['name']:^24}|{student['student_id']:^10}|{student['branch']:^10}|{student['cgpa']:^5}|")
     print("-" * 60)
+
 #update student function
-def update_Student():
+def update_student():
     try:
         student_id=int(input("Enter student_id:"))
     except ValueError:
@@ -134,27 +175,86 @@ def search_student():
     student = find_student(student_id)
     if student: 
         print("Student found")
-        print("name:",student['name'],"\n"+"student_ID:",student['student_id'],"\n","Branch:",student['branch'],"\n"+"CGPA:",student['cgpa'],"\n")
+        print("name:",student['name'],"\n","\n","Branch:",student['branch'],"\n"+"CGPA:",student['cgpa'],"\n")
         return
     print("Student not found")
     return
+#fliter 
+def filter_students():
+    options=input("Enter the filter").strip().lower()
+    if options=="cgpa":
+        cgpa=float(input("Enter the cgpa:"))
+        l=[s for s in database if s['cgpa']>=cgpa]
+        sorted(l,reverse=True)
+        print(f"Name:{l['name']}\tcgpa:{l['cgpa']}")
+    
+
 #average of students
-def Average_students():
-    required_branch=input("Enter the branch of students:").strip().upper()
-    number_of_students=sum(1 for student in database if student['branch'].upper()==required_branch)
-    if number_of_students == 0:
-        print("No students found in this branch.")
-        return
-    total=sum(student['cgpa'] for student in database if student['branch'].upper()==required_branch)    
+def average_students():
+    option=input("Enter if total or branch:").strip().upper()
+    number_of_students=0
+    total=0
+    if option=="TOTAL" :
+        number_of_students=sum(1 for student in database)
+        if number_of_students == 0:
+            print("No students found in this branch.")
+            return
+        total=sum(student['cgpa'] for student in database) 
+    elif option=="BRANCH":
+        required_branch=input("Enter the branch of students:").strip().upper()
+        number_of_students=sum(1 for student in database if student['branch'].upper()==required_branch)
+        if number_of_students == 0:
+            print("No students found in this branch.")
+            return
+        total=sum(student['cgpa'] for student in database if student['branch'].upper()==required_branch)    
     avg=total/number_of_students
     print("Average of the students :",round(avg,2))
     return
+
 #pause function
 def pause():
     input("\nPress Enter to continue...")
 
+#sorting students
+def sort():
+    option=input("How do you want to sort:\n1)by name \n2)by cgpa \nEnter your choice:").strip().upper()
+    if option=="NAME":
+        database.sort(key=lambda student:student['name'])
+        save_database()
+        print("Students have been sorted based on name")
+    elif option=="CGPA":
+        database.sort(key=lambda student:student['cgpa'],reverse=True)
+        save_database()
+        print("Students have been sorted based on cpga")
+        return
+
+#topper seach
+def topper():
+    option=input("which one do you want ? overall or branch:").strip().upper()
+    students = [
+    s for s in database
+    if s['branch'].upper() == branch.upper()
+]
+    if option=="OVERALL":
+        topper = max(
+            students,
+            key=lambda s:s['cgpa']
+        )
+        print("The topper of the colleger:\n")
+        print(f"Name:{topper['name']}\nStudent ID:{topper['student_id']}\nBranch:{topper['branch']}\nCGPA:{topper['cgpa']}")
+        return
+    elif option=="BRANCH":
+        branch=input("Enter the branch:")
+        mark=max(
+            students,
+            key=lambda s:s['cgpa'] and s['branch'].upper()==branch
+        )
+        print("The topper of ",branch," is ")
+        print(f"Name:{topper['name']}\nStudent ID:{topper['student_id']}\nBranch:{topper['branch']}\nCGPA:{topper['cgpa']}")
+        return
+    
 #delete student function
-def delete_Student():
+def delete_student():
     try:
         student_id=int(input("Enter student_id:"))
     except ValueError:
@@ -170,51 +270,79 @@ def delete_Student():
     return
 
 #main function
-load_database()
-start=input("Start the system:")
-while start=="yes" or start=="YES" or start=="start":
-    print("""
-        #######################################################
+def main():
+    load_database()
+    start=input("Start the system:")
+    while start.lower() in ["yes","start"]:
+        print("""
+            #######################################################
                     Student Management System
-        #######################################################
-        1.add Students
-        2.view Students
-        3.Search Students
-        4.Update Students
-        5.Delete student
-        6.Total number of students
-        7.Average of students
-        8.exit
-    """)
-    try:
-        ops=int(input("Enter the operation:"))
-    except ValueError:
-        print("Invalid operation!! please enter a valid one........")
-        pause()
-        continue
-    if ops==1:
-            add_Student()
+            #######################################################
+            1.add Students
+            2.view Students
+            3.Search Students
+            4.Update Students
+            5.Delete student
+            6.Total number of students
+            7.Average of students
+            8.sort
+            9.find highest scorer
+            10.generate report
+            11.create backup
+            12.delete backup
+            13.filter
+            14.exit
+        """)
+        try:
+            ops=int(input("Enter the operation:"))
+        except ValueError:
+            print("Invalid operation!! please enter a valid one........")
             pause()
-    elif ops==2:
-            view_Students()
+            continue
+        if ops==1:
+            add_student()
             pause()
-    elif ops==3:
+        elif ops==2:
+            view_students()
+            pause()
+        elif ops==3:
             search_student()
             pause()
-    elif ops==4:
-            update_Student()
+        elif ops==4:
+            update_student()
             pause()
-    elif ops==5:
-            delete_Student()
+        elif ops==5:
+            delete_student()
             pause()
-    elif ops==6:
+        elif ops==6:
             total_students()
             pause()
-    elif ops==7:
-            Average_students()
+        elif ops==7:
+           average_students()
+           pause()
+        elif ops==8:
+            sort()
             pause()
-    elif ops==8:
-        break
-    elif ops>8 or ops<1:
-        print("Invalid option!! Enter a valid one......")
-        pause()
+        elif ops==9:
+            topper()
+            pause()
+        elif ops==10:
+            convert_File()
+            pause()
+        elif ops==11:
+            create_backup()
+            pause()
+        elif ops==12:
+            delete_backup()
+            pause()
+        elif ops==13:
+            filter_students()
+            pause()
+        elif ops==14:
+            break
+        elif ops>14 or ops<1:
+            print("Invalid option!! Enter a valid one......")
+            pause()
+
+if __name__=="__main__":
+    main()
